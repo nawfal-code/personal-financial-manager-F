@@ -61,3 +61,7 @@ This application helps users **track income and expenses**, **manage budgets**, 
 - JWT-based authentication
 - Protected routes
 - Automatic redirect on unauthorized access
+
+
+## Author
+-MOHAMMED NAWFAL
