@@ -1,16 +1,63 @@
-# React + Vite
+# 💰 Personal Finance Manager – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern and responsive **Personal Finance Manager** frontend built using **React**.  
+This application helps users **track income and expenses**, **manage budgets**, **set financial goals**, and **view detailed financial reports** with charts and exports.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+### 📊 Dashboard
+- Displays **total income**, **total expenses**, and **current balance**
+- Shows **recent transactions** (income & expenses)
+- Fully responsive (mobile & desktop)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 💵 Income Management
+- Add, edit, and delete income records
+- Filter income by **source** and **date**
+- Clean UI with modal-based editing
 
-## Expanding the ESLint configuration
+### 🧾 Expense Management
+- Add and categorize expenses
+- Used for budget calculations and reports
+- Integrated into dashboard & analytics
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 📉 Budget Management
+- Create monthly budgets by category
+- View **spent**, **remaining**, and **progress bar**
+- Edit or delete budgets
+- Recalculate spent amount dynamically
+
+### 🎯 Financial Goals
+- Create savings goals with deadlines
+- Track progress with visual progress bars
+- Update saved amount incrementally
+- Prevents over-saving beyond target
+
+### 📈 Reports & Analytics
+- Income vs Expense bar chart
+- Expense by category pie chart
+- Export reports as:
+  - 📄 **PDF**
+  - 📊 **CSV**
+- Real-time aggregated data from backend
+
+---
+
+## 🛠️ Tech Stack
+
+- **React**
+- **React Router**
+- **Axios**
+- **Tailwind CSS**
+- **Chart.js**
+- **jsPDF**
+- **React Toastify**
+
+---
+
+## 🔐 Authentication
+
+- JWT-based authentication
+- Protected routes
+- Automatic redirect on unauthorized access
