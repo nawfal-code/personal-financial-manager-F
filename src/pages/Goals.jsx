@@ -17,7 +17,9 @@ const Goals = () => {
   const [goals, setGoals] = useState([]);
   const [addAmounts, setAddAmounts] = useState({});
   const [editGoal, setEditGoal] = useState(null);
+  const [editForm, setEditForm] = useState(null);
 
+  /* ADD FORM (ONLY FOR CREATE) */
   const [form, setForm] = useState({
     title: "",
     targetAmount: "",
@@ -72,22 +74,16 @@ const Goals = () => {
     fetchGoals();
   };
 
-  /* UPDATE SAVED AMOUNT (FIXED) */
+  /* UPDATE SAVED AMOUNT */
   const updateProgress = async (goal) => {
     const add = Number(addAmounts[goal._id]);
-    if (!add || add <= 0) {
-      return toast.error("Enter valid amount");
-    }
+    if (!add || add <= 0) return toast.error("Enter valid amount");
 
     const newSaved = goal.savedAmount + add;
+    if (newSaved > goal.targetAmount)
+      return toast.error("Cannot exceed target");
 
-    if (newSaved > goal.targetAmount) {
-      return toast.error("Cannot exceed target amount");
-    }
-
-    await api.put(`/goals/${goal._id}`, {
-      savedAmount: newSaved,
-    });
+    await api.put(`/goals/${goal._id}`, { savedAmount: newSaved });
 
     toast.success("Saved amount updated");
     setAddAmounts({ ...addAmounts, [goal._id]: "" });
@@ -104,7 +100,7 @@ const Goals = () => {
   /* EDIT */
   const openEditModal = (goal) => {
     setEditGoal(goal);
-    setForm({
+    setEditForm({
       title: goal.title,
       targetAmount: goal.targetAmount,
       durationValue: goal.durationValue,
@@ -115,15 +111,16 @@ const Goals = () => {
 
   const saveEdit = async () => {
     await api.patch(`/goals/${editGoal._id}`, {
-      title: form.title,
-      targetAmount: +form.targetAmount,
-      durationValue: +form.durationValue,
-      durationUnit: form.durationUnit,
-      description: form.description,
+      title: editForm.title,
+      targetAmount: +editForm.targetAmount,
+      durationValue: +editForm.durationValue,
+      durationUnit: editForm.durationUnit,
+      description: editForm.description,
     });
 
     toast.success("Goal updated");
     setEditGoal(null);
+    setEditForm(null);
     fetchGoals();
   };
 
@@ -228,35 +225,52 @@ const Goals = () => {
           </div>
 
           {/* EDIT MODAL */}
-          {editGoal && (
+          {editGoal && editForm && (
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
               <div className="bg-white rounded-2xl p-6 w-full max-w-md">
                 <h3 className="text-lg font-bold text-indigo-700 mb-4">
                   Edit Goal
                 </h3>
 
-                <input className={input} placeholder="Title"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                <input className={input}
+                  value={editForm.title}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, title: e.target.value })
+                  }
                 />
-                <input className={`${input} mt-3`} type="number" placeholder="Target"
-                  value={form.targetAmount}
-                  onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
+
+                <input className={`${input} mt-3`} type="number"
+                  value={editForm.targetAmount}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, targetAmount: e.target.value })
+                  }
                 />
-                <input className={`${input} mt-3`} type="number" placeholder="Duration"
-                  value={form.durationValue}
-                  onChange={(e) => setForm({ ...form, durationValue: e.target.value })}
+
+                <input className={`${input} mt-3`} type="number"
+                  value={editForm.durationValue}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, durationValue: e.target.value })
+                  }
                 />
+
                 <select className={`${input} mt-3`}
-                  value={form.durationUnit}
-                  onChange={(e) => setForm({ ...form, durationUnit: e.target.value })}
+                  value={editForm.durationUnit}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, durationUnit: e.target.value })
+                  }
                 >
                   <option value="months">Months</option>
                   <option value="years">Years</option>
                 </select>
 
                 <div className="flex justify-end gap-3 mt-4">
-                  <button onClick={() => setEditGoal(null)} className="px-4 py-2 rounded-xl bg-gray-200">
+                  <button
+                    onClick={() => {
+                      setEditGoal(null);
+                      setEditForm(null);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-gray-200"
+                  >
                     Cancel
                   </button>
                   <button onClick={saveEdit} className={btn}>
