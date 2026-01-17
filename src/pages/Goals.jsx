@@ -4,21 +4,17 @@ import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 
 /* UI */
-const input =
-  "w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400";
-const btn =
-  "rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm font-semibold";
-const btnOutline =
-  "rounded-xl border border-indigo-600 text-indigo-600 px-3 py-1.5 text-sm";
-const btnDanger =
-  "rounded-xl bg-rose-500 text-white px-3 py-1.5 text-sm";
+const input = "w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400";
+const btn = "rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm font-semibold";
+const btnOutline = "rounded-xl border border-indigo-600 text-indigo-600 px-3 py-1.5 text-sm";
+const btnDanger = "rounded-xl bg-rose-500 text-white px-3 py-1.5 text-sm";
 
 const Goals = () => {
   const [goals, setGoals] = useState([]);
   const [addAmounts, setAddAmounts] = useState({});
   const [editGoal, setEditGoal] = useState(null);
 
-  /* ADD FORM STATE (SEPARATE) */
+  /* ADD FORM STATE */
   const [addForm, setAddForm] = useState({
     title: "",
     targetAmount: "",
@@ -28,7 +24,7 @@ const Goals = () => {
     description: "",
   });
 
-  /* EDIT FORM STATE (SEPARATE) */
+  /* EDIT FORM STATE */
   const [editForm, setEditForm] = useState({
     title: "",
     targetAmount: "",
@@ -37,7 +33,7 @@ const Goals = () => {
     description: "",
   });
 
-  /* FETCH */
+  /* FETCH GOALS */
   const fetchGoals = async () => {
     const res = await api.get("/goals");
     setGoals(res.data);
@@ -70,31 +66,17 @@ const Goals = () => {
     }
 
     toast.success("Goal created");
-
-    setAddForm({
-      title: "",
-      targetAmount: "",
-      savedAmount: "",
-      durationValue: "",
-      durationUnit: "months",
-      description: "",
-    });
-
+    setAddForm({ title: "", targetAmount: "", savedAmount: "", durationValue: "", durationUnit: "months", description: "" });
     fetchGoals();
   };
 
   /* UPDATE SAVED AMOUNT */
   const updateProgress = async (goal) => {
     const add = Number(addAmounts[goal._id]);
-    if (!add || add <= 0) {
-      return toast.error("Enter valid amount");
-    }
+    if (!add || add <= 0) return toast.error("Enter valid amount");
 
     const newSaved = goal.savedAmount + add;
-
-    if (newSaved > goal.targetAmount) {
-      return toast.error("Cannot exceed target amount");
-    }
+    if (newSaved > goal.targetAmount) return toast.error("Cannot exceed target amount");
 
     await api.put(`/goals/${goal._id}`, { savedAmount: newSaved });
 
@@ -142,16 +124,10 @@ const Goals = () => {
       <Navbar />
       <div className="min-h-screen bg-indigo-50 p-6">
         <div className="max-w-6xl mx-auto">
-
-          <h2 className="text-3xl font-bold text-center text-indigo-700 mb-6">
-            Financial Goals
-          </h2>
+          <h2 className="text-3xl font-bold text-center text-indigo-700 mb-6">Financial Goals</h2>
 
           {/* ADD GOAL */}
-          <form
-            onSubmit={createGoal}
-            className="bg-white p-5 rounded-2xl shadow grid gap-4 md:grid-cols-6"
-          >
+          <form onSubmit={createGoal} className="bg-white p-5 rounded-2xl shadow grid gap-4 md:grid-cols-6">
             <input className={input} placeholder="Title"
               value={addForm.title}
               onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
@@ -181,28 +157,19 @@ const Goals = () => {
           {/* GOALS LIST */}
           <div className="grid gap-4 mt-8">
             {goals.map((g) => {
-              const percent = Math.min(
-                100,
-                (g.savedAmount / g.targetAmount) * 100
-              ).toFixed(0);
+              const percent = Math.min(100, (g.savedAmount / g.targetAmount) * 100).toFixed(0);
 
               return (
                 <div key={g._id} className="bg-white p-5 rounded-2xl shadow">
                   <div className="flex justify-between">
                     <h3 className="font-semibold text-indigo-700">{g.title}</h3>
                     <div className="flex gap-2">
-                      <button onClick={() => openEditModal(g)} className={btnOutline}>
-                        Edit
-                      </button>
-                      <button onClick={() => deleteGoal(g._id)} className={btnDanger}>
-                        Delete
-                      </button>
+                      <button onClick={() => openEditModal(g)} className={btnOutline}>Edit</button>
+                      <button onClick={() => deleteGoal(g._id)} className={btnDanger}>Delete</button>
                     </div>
                   </div>
 
-                  <p className="text-sm mt-1">
-                    Duration: {g.durationValue} {g.durationUnit}
-                  </p>
+                  <p className="text-sm mt-1">Duration: {g.durationValue} {g.durationUnit}</p>
 
                   <div className="grid grid-cols-4 mt-3 text-sm">
                     <p>Target ₹{g.targetAmount}</p>
@@ -212,10 +179,7 @@ const Goals = () => {
                   </div>
 
                   <div className="h-2 bg-gray-200 rounded mt-2">
-                    <div
-                      className="h-2 bg-indigo-600 rounded"
-                      style={{ width: `${percent}%` }}
-                    />
+                    <div className="h-2 bg-indigo-600 rounded" style={{ width: `${percent}%` }} />
                   </div>
 
                   <div className="flex gap-2 mt-3">
@@ -224,14 +188,22 @@ const Goals = () => {
                       type="number"
                       placeholder="Add saved amount"
                       value={addAmounts[g._id] || ""}
-                      onChange={(e) =>
-                        setAddAmounts({ ...addAmounts, [g._id]: e.target.value })
-                      }
+                      onChange={(e) => setAddAmounts({ ...addAmounts, [g._id]: e.target.value })}
                     />
-                    <button onClick={() => updateProgress(g)} className={btn}>
-                      Update
-                    </button>
+                    <button onClick={() => updateProgress(g)} className={btn}>Update</button>
                   </div>
+
+                  {/* 🔹 Savings History */}
+                  {g.savingsHistory?.length > 0 && (
+                    <div className="mt-3 text-sm text-gray-600">
+                      <p className="font-semibold">Savings History</p>
+                      <ul className="list-disc ml-5 mt-1">
+                        {g.savingsHistory.map((h, i) => (
+                          <li key={i}>₹{h.amount} added on {new Date(h.date).toLocaleDateString()}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -241,9 +213,7 @@ const Goals = () => {
           {editGoal && (
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
               <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-                <h3 className="text-lg font-bold text-indigo-700 mb-4">
-                  Edit Goal
-                </h3>
+                <h3 className="text-lg font-bold text-indigo-700 mb-4">Edit Goal</h3>
 
                 <input className={input} placeholder="Title"
                   value={editForm.title}
@@ -266,12 +236,8 @@ const Goals = () => {
                 </select>
 
                 <div className="flex justify-end gap-3 mt-4">
-                  <button onClick={() => setEditGoal(null)} className="px-4 py-2 rounded-xl bg-gray-200">
-                    Cancel
-                  </button>
-                  <button onClick={saveEdit} className={btn}>
-                    Save
-                  </button>
+                  <button onClick={() => setEditGoal(null)} className="px-4 py-2 rounded-xl bg-gray-200">Cancel</button>
+                  <button onClick={saveEdit} className={btn}>Save</button>
                 </div>
               </div>
             </div>
