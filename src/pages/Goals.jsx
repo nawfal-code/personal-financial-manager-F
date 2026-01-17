@@ -33,6 +33,9 @@ const Goals = () => {
     description: "",
   });
 
+  /* TRACK WHICH GOAL'S HISTORY IS VISIBLE */
+  const [showHistory, setShowHistory] = useState({});
+
   /* FETCH GOALS */
   const fetchGoals = async () => {
     const res = await api.get("/goals");
@@ -193,17 +196,26 @@ const Goals = () => {
                     <button onClick={() => updateProgress(g)} className={btn}>Update</button>
                   </div>
 
-                  {/* 🔹 Savings History */}
+                  {/* 🔹 View Savings History Link */}
                   {g.savingsHistory?.length > 0 && (
                     <div className="mt-3 text-sm text-gray-600">
-                      <p className="font-semibold">Savings History</p>
-                      <ul className="list-disc ml-5 mt-1">
-                        {g.savingsHistory.map((h, i) => (
-                          <li key={i}>₹{h.amount} added on {new Date(h.date).toLocaleDateString()}</li>
-                        ))}
-                      </ul>
+                      <button
+                        className="text-indigo-600 underline text-sm"
+                        onClick={() => setShowHistory({ ...showHistory, [g._id]: !showHistory[g._id] })}
+                      >
+                        {showHistory[g._id] ? "Hide History" : "View History"}
+                      </button>
+
+                      {showHistory[g._id] && (
+                        <ul className="list-disc ml-5 mt-1">
+                          {g.savingsHistory.map((h, i) => (
+                            <li key={i}>₹{h.amount} added on {new Date(h.date).toLocaleDateString()}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   )}
+
                 </div>
               );
             })}
