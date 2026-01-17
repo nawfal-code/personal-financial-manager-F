@@ -33,7 +33,7 @@ const EditExpenseModal = ({ expense, isOpen, onClose, onUpdate }) => {
 
     setAmount(expense.amount);
     setDescription(expense.description || "");
-    setDate(expense.date?.split("T")[0] || "");
+    setDate(expense.date ? expense.date.split("T")[0] : "");
 
     if (
       ["Groceries", "Food", "Rent", "Transport", "Shopping"].includes(
@@ -78,9 +78,18 @@ const EditExpenseModal = ({ expense, isOpen, onClose, onUpdate }) => {
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input className={inputStyle} type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input
+            className={inputStyle}
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
 
-          <select className={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            className={inputStyle}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             <option>Groceries</option>
             <option>Food</option>
             <option>Rent</option>
@@ -98,11 +107,25 @@ const EditExpenseModal = ({ expense, isOpen, onClose, onUpdate }) => {
             />
           )}
 
-          <input className={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            className={inputStyle}
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <input
+            className={inputStyle}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
 
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-gray-200"
+            >
               Cancel
             </button>
             <button type="submit" className={primaryBtn}>
@@ -174,7 +197,7 @@ const Expenses = () => {
     fetchExpenses();
   };
 
-  /* FILTER LOGIC (CLONE OF INCOME) */
+  /* FILTER LOGIC */
   const filteredExpenses = expenses.filter((e) => {
     const matchCategory = filterCategory ? e.category === filterCategory : true;
     const matchFrom = fromDate ? new Date(e.date) >= new Date(fromDate) : true;
@@ -182,7 +205,7 @@ const Expenses = () => {
     return matchCategory && matchFrom && matchTo;
   });
 
-  const uniqueCategories = [...new Set(expenses.map(e => e.category))];
+  const uniqueCategories = [...new Set(expenses.map((e) => e.category))];
 
   return (
     <>
@@ -218,7 +241,7 @@ const Expenses = () => {
             <button className={primaryBtn}>Add Expense</button>
           </form>
 
-          {/* FILTER SECTION (EXACT INCOME DESIGN) */}
+          {/* FILTER SECTION */}
           <div className="bg-white rounded-2xl shadow-lg p-5 mt-6 grid gap-4 md:grid-cols-4 items-end">
             <select className={inputStyle} value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="">All Categories</option>
@@ -254,7 +277,7 @@ const Expenses = () => {
                 </div>
 
                 <p className="text-sm mt-2 opacity-90">
-                  {e.date.split("T")[0]}
+                  {e.date ? e.date.split("T")[0] : "-"}
                 </p>
 
                 <p className="text-sm mt-1 opacity-90">
@@ -291,7 +314,7 @@ const Expenses = () => {
                     <td className="p-3 font-semibold text-indigo-700">₹ {e.amount}</td>
                     <td className="p-3">{e.category}</td>
                     <td className="p-3">{e.description || "-"}</td>
-                    <td className="p-3">{e.date.split("T")[0]}</td>
+                    <td className="p-3">{e.date ? e.date.split("T")[0] : "-"}</td>
                     <td className="p-3 flex justify-center gap-3">
                       <button onClick={() => { setEditExpense(e); setModalOpen(true); }} className={outlineBtn}>
                         Edit
