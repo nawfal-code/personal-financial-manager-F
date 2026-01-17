@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 
 /* =======================
-   UI STYLES
+   STYLES
 ======================= */
 const inputStyle =
   "w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400";
@@ -19,103 +19,7 @@ const dangerBtn =
   "rounded-xl bg-rose-500 text-white px-3 py-1.5 text-sm";
 
 /* =======================
-   EDIT MODAL
-======================= */
-const EditIncomeModal = ({ income, isOpen, onClose, onUpdate }) => {
-  const [amount, setAmount] = useState("");
-  const [source, setSource] = useState("Salary");
-  const [customSource, setCustomSource] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-
-  useEffect(() => {
-    if (income) {
-      setAmount(income.amount);
-      setSource(
-        ["Salary", "Business", "Investments"].includes(income.source)
-          ? income.source
-          : "Other"
-      );
-      setCustomSource(
-        ["Salary", "Business", "Investments"].includes(income.source)
-          ? ""
-          : income.source
-      );
-      setDescription(income.description || "");
-      setDate(income.date?.split("T")[0] || "");
-    }
-  }, [income]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const finalSource =
-      source === "Other" ? customSource.trim() : source;
-
-    if (!finalSource) {
-      return toast.error("Enter income type");
-    }
-
-    try {
-      await api.put(`/income/${income._id}`, {
-        amount,
-        source: finalSource,
-        description,
-        date,
-      });
-      toast.success("Income updated");
-      onUpdate();
-      onClose();
-    } catch {
-      toast.error("Update failed");
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h3 className="text-lg font-bold text-indigo-700 mb-4">Edit Income</h3>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input className={inputStyle} type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-
-          <select className={inputStyle} value={source} onChange={(e) => setSource(e.target.value)}>
-            <option>Salary</option>
-            <option>Business</option>
-            <option>Investments</option>
-            <option>Other</option>
-          </select>
-
-          {source === "Other" && (
-            <input
-              className={inputStyle}
-              placeholder="Enter income type"
-              value={customSource}
-              onChange={(e) => setCustomSource(e.target.value)}
-            />
-          )}
-
-          <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <input className={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-gray-200">
-              Cancel
-            </button>
-            <button type="submit" className={primaryBtn}>
-              Update
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-/* =======================
-   MAIN PAGE
+   MAIN
 ======================= */
 const Income = () => {
   const [incomeList, setIncomeList] = useState([]);
@@ -126,8 +30,10 @@ const Income = () => {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
-  const [editIncome, setEditIncome] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  /* FILTER STATES (UNCHANGED) */
+  const [filterSource, setFilterSource] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const fetchIncome = async () => {
     const res = await api.get("/income");
@@ -138,6 +44,7 @@ const Income = () => {
     fetchIncome();
   }, []);
 
+  /* ADD INCOME */
   const addIncome = async (e) => {
     e.preventDefault();
 
@@ -145,27 +52,25 @@ const Income = () => {
       source === "Other" ? customSource.trim() : source;
 
     if (!finalSource) {
-      return toast.error("Enter income type");
+      return toast.error("Please enter income type");
     }
 
-    try {
-      await api.post("/income", {
-        amount,
-        source: finalSource,
-        description,
-        date,
-      });
+    await api.post("/income", {
+      amount,
+      source: finalSource,
+      description,
+      date,
+    });
 
-      toast.success("Income added");
-      setAmount("");
-      setSource("Salary");
-      setCustomSource("");
-      setDescription("");
-      setDate("");
-      fetchIncome();
-    } catch {
-      toast.error("Failed to add income");
-    }
+    toast.success("Income added");
+
+    setAmount("");
+    setSource("Salary");
+    setCustomSource("");
+    setDescription("");
+    setDate("");
+
+    fetchIncome();
   };
 
   const deleteIncome = async (id) => {
@@ -173,6 +78,17 @@ const Income = () => {
     toast.success("Income deleted");
     fetchIncome();
   };
+
+  /* FILTER LOGIC (UNCHANGED) */
+  const filteredIncome = incomeList.filter((i) => {
+    const matchSource = filterSource ? i.source === filterSource : true;
+    const matchFrom = fromDate ? new Date(i.date) >= new Date(fromDate) : true;
+    const matchTo = toDate ? new Date(i.date) <= new Date(toDate) : true;
+    return matchSource && matchFrom && matchTo;
+  });
+
+  /* UNIQUE SOURCES FOR FILTER */
+  const uniqueSources = [...new Set(incomeList.map(i => i.source))];
 
   return (
     <>
@@ -185,20 +101,31 @@ const Income = () => {
             Income Manager
           </h2>
 
-          {/* ADD INCOME */}
+          {/* ADD FORM */}
           <form
             onSubmit={addIncome}
             className="bg-white p-5 rounded-2xl shadow grid gap-4 md:grid-cols-5"
           >
-            <input className={inputStyle} type="number" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <input
+              className={inputStyle}
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
 
-            <select className={inputStyle} value={source} onChange={(e) => setSource(e.target.value)}>
+            <select
+              className={inputStyle}
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+            >
               <option>Salary</option>
               <option>Business</option>
               <option>Investments</option>
               <option>Other</option>
             </select>
 
+            {/* 🆕 DYNAMIC TYPE INPUT */}
             {source === "Other" && (
               <input
                 className={inputStyle}
@@ -208,9 +135,54 @@ const Income = () => {
               />
             )}
 
-            <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input
+              className={inputStyle}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+
             <button className={primaryBtn}>Add Income</button>
           </form>
+
+          {/* FILTER SECTION (UNCHANGED) */}
+          <div className="bg-white p-5 rounded-2xl shadow mt-6 grid gap-4 md:grid-cols-4">
+            <select
+              className={inputStyle}
+              value={filterSource}
+              onChange={(e) => setFilterSource(e.target.value)}
+            >
+              <option value="">All Sources</option>
+              {uniqueSources.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+
+            <input
+              className={inputStyle}
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+
+            <input
+              className={inputStyle}
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+
+            <button
+              onClick={() => {
+                setFilterSource("");
+                setFromDate("");
+                setToDate("");
+              }}
+              className={outlineBtn}
+            >
+              Clear Filters
+            </button>
+          </div>
 
           {/* LIST */}
           <div className="mt-8 bg-white rounded-2xl shadow overflow-hidden">
@@ -218,22 +190,22 @@ const Income = () => {
               <thead className="bg-indigo-600 text-white">
                 <tr>
                   <th className="p-3 text-left">Amount</th>
-                  <th className="p-3 text-left">Type</th>
+                  <th className="p-3 text-left">Source</th>
                   <th className="p-3 text-left">Date</th>
                   <th className="p-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {incomeList.map((i) => (
+                {filteredIncome.map((i) => (
                   <tr key={i._id} className="border-t">
                     <td className="p-3">₹ {i.amount}</td>
                     <td className="p-3">{i.source}</td>
                     <td className="p-3">{i.date.split("T")[0]}</td>
-                    <td className="p-3 flex justify-center gap-2">
-                      <button onClick={() => { setEditIncome(i); setModalOpen(true); }} className={outlineBtn}>
-                        Edit
-                      </button>
-                      <button onClick={() => deleteIncome(i._id)} className={dangerBtn}>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => deleteIncome(i._id)}
+                        className={dangerBtn}
+                      >
                         Delete
                       </button>
                     </td>
@@ -243,12 +215,6 @@ const Income = () => {
             </table>
           </div>
 
-          <EditIncomeModal
-            income={editIncome}
-            isOpen={modalOpen}
-            onClose={() => setModalOpen(false)}
-            onUpdate={fetchIncome}
-          />
         </div>
       </div>
     </>
