@@ -52,19 +52,15 @@ const EditIncomeModal = ({ income, isOpen, onClose, onUpdate }) => {
 
     if (!finalSource) return toast.error("Enter income type");
 
-    try {
-      await api.put(`/income/${income._id}`, {
-        amount,
-        source: finalSource,
-        date,
-      });
+    await api.put(`/income/${income._id}`, {
+      amount,
+      source: finalSource,
+      date,
+    });
 
-      toast.success("Income updated");
-      onUpdate();
-      onClose();
-    } catch {
-      toast.error("Update failed");
-    }
+    toast.success("Income updated");
+    onUpdate();
+    onClose();
   };
 
   return (
@@ -75,18 +71,9 @@ const EditIncomeModal = ({ income, isOpen, onClose, onUpdate }) => {
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            className={inputStyle}
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
+          <input className={inputStyle} type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
 
-          <select
-            className={inputStyle}
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-          >
+          <select className={inputStyle} value={source} onChange={(e) => setSource(e.target.value)}>
             <option>Salary</option>
             <option>Business</option>
             <option>Investments</option>
@@ -102,19 +89,10 @@ const EditIncomeModal = ({ income, isOpen, onClose, onUpdate }) => {
             />
           )}
 
-          <input
-            className={inputStyle}
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
           <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300"
-            >
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-gray-200">
               Cancel
             </button>
             <button type="submit" className={primaryBtn}>
@@ -204,23 +182,10 @@ const Income = () => {
           </h2>
 
           {/* ADD FORM */}
-          <form
-            onSubmit={addIncome}
-            className="bg-white rounded-2xl shadow-lg p-5 grid gap-4 md:grid-cols-5 items-end"
-          >
-            <input
-              className={inputStyle}
-              placeholder="Amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
+          <form onSubmit={addIncome} className="bg-white rounded-2xl shadow-lg p-5 grid gap-4 md:grid-cols-5 items-end">
+            <input className={inputStyle} placeholder="Amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
 
-            <select
-              className={inputStyle}
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-            >
+            <select className={inputStyle} value={source} onChange={(e) => setSource(e.target.value)}>
               <option>Salary</option>
               <option>Business</option>
               <option>Investments</option>
@@ -228,50 +193,25 @@ const Income = () => {
             </select>
 
             {source === "Other" && (
-              <input
-                className={inputStyle}
-                placeholder="Enter income type"
-                value={customSource}
-                onChange={(e) => setCustomSource(e.target.value)}
-              />
+              <input className={inputStyle} placeholder="Enter income type" value={customSource} onChange={(e) => setCustomSource(e.target.value)} />
             )}
 
-            <input
-              className={inputStyle}
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
             <button className={primaryBtn}>Add Income</button>
           </form>
 
           {/* FILTER SECTION */}
           <div className="bg-white rounded-2xl shadow-lg p-5 mt-6 grid gap-4 md:grid-cols-4 items-end">
-            <select
-              className={inputStyle}
-              value={filterSource}
-              onChange={(e) => setFilterSource(e.target.value)}
-            >
+            <select className={inputStyle} value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
               <option value="">All Sources</option>
               {uniqueSources.map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>
 
-            <input
-              className={inputStyle}
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-
-            <input
-              className={inputStyle}
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
+            <input className={inputStyle} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            <input className={inputStyle} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
 
             <button
               onClick={() => {
@@ -285,7 +225,40 @@ const Income = () => {
             </button>
           </div>
 
-          {/* TABLE */}
+          {/* ✅ MOBILE VIEW (FIX ADDED) */}
+          <div className="grid gap-4 mt-8 md:hidden">
+            {filteredIncome.map((i) => (
+              <div key={i._id} className="bg-gradient-to-br from-indigo-500 to-violet-500 text-white rounded-2xl p-4 shadow-lg">
+                <div className="flex justify-between items-center">
+                  <p className="text-xl font-bold">₹ {i.amount}</p>
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-xs">
+                    {i.source}
+                  </span>
+                </div>
+
+                <p className="text-sm mt-2 opacity-90">
+                  {i.date.split("T")[0]}
+                </p>
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => { setEditIncome(i); setModalOpen(true); }}
+                    className="flex-1 bg-white/20 py-2 rounded-xl"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteIncome(i._id)}
+                    className="flex-1 bg-rose-500 py-2 rounded-xl"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP TABLE */}
           <div className="hidden md:block mt-10 bg-white rounded-2xl shadow-lg overflow-hidden">
             <table className="w-full">
               <thead className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
@@ -303,16 +276,10 @@ const Income = () => {
                     <td className="p-3">{i.source}</td>
                     <td className="p-3">{i.date.split("T")[0]}</td>
                     <td className="p-3 flex justify-center gap-3">
-                      <button
-                        onClick={() => { setEditIncome(i); setModalOpen(true); }}
-                        className={outlineBtn}
-                      >
+                      <button onClick={() => { setEditIncome(i); setModalOpen(true); }} className={outlineBtn}>
                         Edit
                       </button>
-                      <button
-                        onClick={() => deleteIncome(i._id)}
-                        className={dangerBtn}
-                      >
+                      <button onClick={() => deleteIncome(i._id)} className={dangerBtn}>
                         Delete
                       </button>
                     </td>
