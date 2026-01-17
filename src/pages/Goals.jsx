@@ -48,13 +48,13 @@ const Goals = () => {
   }, []);
 
   /* =======================
-     CREATE GOAL (FIXED)
+     CREATE GOAL (WITH INITIAL SAVED)
   ======================= */
   const addGoal = async (e) => {
     e.preventDefault();
 
-    const initialSaved = Number(newGoal.savedAmount || 0);
     const target = Number(newGoal.targetAmount);
+    const initialSaved = Number(newGoal.savedAmount || 0);
 
     if (!newGoal.title || !target || !newGoal.deadline) {
       toast.error("Title, target & deadline required");
@@ -67,7 +67,7 @@ const Goals = () => {
     }
 
     try {
-      // 1️⃣ Create goal FIRST
+      // 1️⃣ create goal
       const res = await api.post("/goals", {
         title: newGoal.title,
         targetAmount: target,
@@ -77,14 +77,14 @@ const Goals = () => {
 
       const createdGoal = res.data.goal || res.data;
 
-      // 2️⃣ Apply initial saved amount IF EXISTS
+      // 2️⃣ apply initial saved
       if (initialSaved > 0) {
         await api.put(`/goals/${createdGoal._id}`, {
           savedAmount: initialSaved,
         });
       }
 
-      toast.success("Goal created successfully");
+      toast.success("Goal created");
       setNewGoal({
         title: "",
         targetAmount: "",
@@ -103,21 +103,21 @@ const Goals = () => {
      UPDATE PROGRESS
   ======================= */
   const updateProgress = async (goal) => {
-    const amount = Number(addAmounts[goal._id]);
+    const add = Number(addAmounts[goal._id]);
     const saved = Number(goal.savedAmount);
 
-    if (!amount || amount <= 0) {
+    if (!add || add <= 0) {
       toast.error("Enter valid amount");
       return;
     }
 
-    if (saved + amount > goal.targetAmount) {
+    if (saved + add > goal.targetAmount) {
       toast.error("Cannot exceed target");
       return;
     }
 
     await api.put(`/goals/${goal._id}`, {
-      savedAmount: saved + amount,
+      savedAmount: saved + add,
     });
 
     toast.success("Progress updated");
@@ -135,19 +135,31 @@ const Goals = () => {
   };
 
   /* =======================
-     UPDATE GOAL DETAILS
+     EDIT GOAL (FIXED)
   ======================= */
   const updateGoalDetails = async () => {
-    await api.patch(`/goals/${editGoal._id}`, {
-      title: editGoal.title,
-      targetAmount: Number(editGoal.targetAmount),
-      deadline: new Date(editGoal.deadline),
-      description: editGoal.description,
-    });
+    const target = Number(editGoal.targetAmount);
+    const saved = Number(editGoal.savedAmount);
 
-    toast.success("Goal updated");
-    setEditGoal(null);
-    fetchGoals();
+    if (target < saved) {
+      toast.error("Target cannot be less than saved amount");
+      return;
+    }
+
+    try {
+      await api.patch(`/goals/${editGoal._id}`, {
+        title: editGoal.title,
+        targetAmount: target,
+        deadline: new Date(editGoal.deadline),
+        description: editGoal.description,
+      });
+
+      toast.success("Goal updated");
+      setEditGoal(null);
+      fetchGoals();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Update failed");
+    }
   };
 
   return (
@@ -185,7 +197,7 @@ const Goals = () => {
 
             <input
               type="number"
-              placeholder="Initial saved (optional)"
+              placeholder="Initial saved"
               className={inputStyle}
               value={newGoal.savedAmount}
               onChange={(e) =>
@@ -207,16 +219,17 @@ const Goals = () => {
             </button>
           </form>
 
-          {/* GOALS */}
+          {/* GOALS LIST */}
           <div className="grid gap-4 mt-8">
             {goals.map((g) => {
-              const saved = Number(g.savedAmount);
-              const target = Number(g.targetAmount);
-              const progress = Math.min(100, (saved / target) * 100);
+              const progress = Math.min(
+                100,
+                (g.savedAmount / g.targetAmount) * 100
+              );
 
               return (
                 <div key={g._id} className="bg-white rounded-2xl shadow-lg p-5">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between">
                     <h3 className="font-bold text-indigo-700">{g.title}</h3>
                     <div className="flex gap-2">
                       <button
@@ -239,15 +252,11 @@ const Goals = () => {
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-600 mt-1">
-                    Deadline: {g.deadline.slice(0, 10)}
-                  </p>
-
                   <div className="grid md:grid-cols-4 gap-3 mt-4 text-sm">
-                    <p>Target: ₹ {target}</p>
-                    <p className="text-green-600">Saved: ₹ {saved}</p>
+                    <p>Target: ₹ {g.targetAmount}</p>
+                    <p className="text-green-600">Saved: ₹ {g.savedAmount}</p>
                     <p className="text-orange-600">
-                      Remaining: ₹ {target - saved}
+                      Remaining: ₹ {g.targetAmount - g.savedAmount}
                     </p>
                     <p className="font-semibold">{progress.toFixed(0)}%</p>
                   </div>
@@ -262,7 +271,7 @@ const Goals = () => {
                   <div className="flex gap-2 mt-4">
                     <input
                       type="number"
-                      placeholder="Add saved amount"
+                      placeholder="Add saved"
                       className={inputStyle}
                       value={addAmounts[g._id] || ""}
                       onChange={(e) =>
@@ -283,6 +292,70 @@ const Goals = () => {
               );
             })}
           </div>
+
+          {/* EDIT MODAL */}
+          {editGoal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                <h3 className="text-xl font-bold text-indigo-700 mb-4">
+                  Edit Goal
+                </h3>
+
+                <input
+                  className={inputStyle}
+                  value={editGoal.title}
+                  onChange={(e) =>
+                    setEditGoal({ ...editGoal, title: e.target.value })
+                  }
+                />
+
+                <input
+                  type="number"
+                  className={`${inputStyle} mt-3`}
+                  value={editGoal.targetAmount}
+                  onChange={(e) =>
+                    setEditGoal({
+                      ...editGoal,
+                      targetAmount: e.target.value,
+                    })
+                  }
+                />
+
+                <input
+                  type="date"
+                  className={`${inputStyle} mt-3`}
+                  value={editGoal.deadline}
+                  onChange={(e) =>
+                    setEditGoal({ ...editGoal, deadline: e.target.value })
+                  }
+                />
+
+                <textarea
+                  className={`${inputStyle} mt-3`}
+                  placeholder="Description"
+                  value={editGoal.description || ""}
+                  onChange={(e) =>
+                    setEditGoal({
+                      ...editGoal,
+                      description: e.target.value,
+                    })
+                  }
+                />
+
+                <div className="flex justify-end gap-3 mt-4">
+                  <button
+                    onClick={() => setEditGoal(null)}
+                    className="px-4 py-2 rounded-xl bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button onClick={updateGoalDetails} className={primaryBtn}>
+                    Update
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
