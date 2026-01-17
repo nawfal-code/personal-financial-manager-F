@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 
 /* =======================
-   REUSABLE UI STYLES
+   UI STYLES
 ======================= */
 const inputStyle =
   "w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition";
@@ -19,7 +19,7 @@ const dangerBtn =
   "rounded-xl bg-rose-500 text-white px-3 py-1.5 text-sm hover:bg-rose-600 transition";
 
 /* =======================
-   MAIN COMPONENT
+   COMPONENT
 ======================= */
 const Goals = () => {
   const [goals, setGoals] = useState([]);
@@ -39,12 +39,8 @@ const Goals = () => {
      FETCH GOALS
   ======================= */
   const fetchGoals = async () => {
-    try {
-      const res = await api.get("/goals");
-      setGoals(res.data);
-    } catch {
-      toast.error("Failed to load goals");
-    }
+    const res = await api.get("/goals");
+    setGoals(res.data);
   };
 
   useEffect(() => {
@@ -52,34 +48,43 @@ const Goals = () => {
   }, []);
 
   /* =======================
-     CREATE GOAL
+     CREATE GOAL (FIXED)
   ======================= */
   const addGoal = async (e) => {
     e.preventDefault();
 
-    if (!newGoal.title || !newGoal.targetAmount || !newGoal.deadline) {
+    const initialSaved = Number(newGoal.savedAmount || 0);
+    const target = Number(newGoal.targetAmount);
+
+    if (!newGoal.title || !target || !newGoal.deadline) {
       toast.error("Title, target & deadline required");
       return;
     }
 
-    if (
-      Number(newGoal.savedAmount || 0) >
-      Number(newGoal.targetAmount)
-    ) {
+    if (initialSaved > target) {
       toast.error("Saved amount cannot exceed target");
       return;
     }
 
     try {
-      await api.post("/goals", {
+      // 1️⃣ Create goal FIRST
+      const res = await api.post("/goals", {
         title: newGoal.title,
-        targetAmount: Number(newGoal.targetAmount),
-        savedAmount: Number(newGoal.savedAmount || 0),
+        targetAmount: target,
         deadline: new Date(newGoal.deadline),
         description: newGoal.description,
       });
 
-      toast.success("Goal created");
+      const createdGoal = res.data.goal || res.data;
+
+      // 2️⃣ Apply initial saved amount IF EXISTS
+      if (initialSaved > 0) {
+        await api.put(`/goals/${createdGoal._id}`, {
+          savedAmount: initialSaved,
+        });
+      }
+
+      toast.success("Goal created successfully");
       setNewGoal({
         title: "",
         targetAmount: "",
@@ -87,10 +92,37 @@ const Goals = () => {
         deadline: "",
         description: "",
       });
+
       fetchGoals();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to create goal");
     }
+  };
+
+  /* =======================
+     UPDATE PROGRESS
+  ======================= */
+  const updateProgress = async (goal) => {
+    const amount = Number(addAmounts[goal._id]);
+    const saved = Number(goal.savedAmount);
+
+    if (!amount || amount <= 0) {
+      toast.error("Enter valid amount");
+      return;
+    }
+
+    if (saved + amount > goal.targetAmount) {
+      toast.error("Cannot exceed target");
+      return;
+    }
+
+    await api.put(`/goals/${goal._id}`, {
+      savedAmount: saved + amount,
+    });
+
+    toast.success("Progress updated");
+    setAddAmounts({ ...addAmounts, [goal._id]: "" });
+    fetchGoals();
   };
 
   /* =======================
@@ -103,50 +135,19 @@ const Goals = () => {
   };
 
   /* =======================
-     UPDATE SAVED AMOUNT
-  ======================= */
-  const updateProgress = async (goal) => {
-    const amount = Number(addAmounts[goal._id]);
-    const currentSaved = Number(goal.savedAmount || 0);
-    const target = Number(goal.targetAmount);
-
-    if (!amount || amount <= 0) {
-      toast.error("Enter valid amount");
-      return;
-    }
-
-    if (currentSaved + amount > target) {
-      toast.error("Cannot exceed target");
-      return;
-    }
-
-    await api.put(`/goals/${goal._id}`, {
-      savedAmount: currentSaved + amount,
-    });
-
-    toast.success("Progress updated");
-    setAddAmounts({ ...addAmounts, [goal._id]: "" });
-    fetchGoals();
-  };
-
-  /* =======================
      UPDATE GOAL DETAILS
   ======================= */
   const updateGoalDetails = async () => {
-    try {
-      await api.patch(`/goals/${editGoal._id}`, {
-        title: editGoal.title,
-        targetAmount: Number(editGoal.targetAmount),
-        deadline: new Date(editGoal.deadline),
-        description: editGoal.description,
-      });
+    await api.patch(`/goals/${editGoal._id}`, {
+      title: editGoal.title,
+      targetAmount: Number(editGoal.targetAmount),
+      deadline: new Date(editGoal.deadline),
+      description: editGoal.description,
+    });
 
-      toast.success("Goal updated");
-      setEditGoal(null);
-      fetchGoals();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed");
-    }
+    toast.success("Goal updated");
+    setEditGoal(null);
+    fetchGoals();
   };
 
   return (
@@ -169,9 +170,7 @@ const Goals = () => {
               placeholder="Goal title"
               className={inputStyle}
               value={newGoal.title}
-              onChange={(e) =>
-                setNewGoal({ ...newGoal, title: e.target.value })
-              }
+              onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
             />
 
             <input
@@ -208,12 +207,11 @@ const Goals = () => {
             </button>
           </form>
 
-          {/* GOALS LIST */}
+          {/* GOALS */}
           <div className="grid gap-4 mt-8">
             {goals.map((g) => {
-              const saved = Number(g.savedAmount || 0);
-              const target = Number(g.targetAmount || 1);
-              const remaining = target - saved;
+              const saved = Number(g.savedAmount);
+              const target = Number(g.targetAmount);
               const progress = Math.min(100, (saved / target) * 100);
 
               return (
@@ -248,8 +246,8 @@ const Goals = () => {
                   <div className="grid md:grid-cols-4 gap-3 mt-4 text-sm">
                     <p>Target: ₹ {target}</p>
                     <p className="text-green-600">Saved: ₹ {saved}</p>
-                    <p className={`${remaining < 0 ? "text-rose-600" : "text-orange-600"}`}>
-                      Remaining: ₹ {remaining}
+                    <p className="text-orange-600">
+                      Remaining: ₹ {target - saved}
                     </p>
                     <p className="font-semibold">{progress.toFixed(0)}%</p>
                   </div>
@@ -285,70 +283,6 @@ const Goals = () => {
               );
             })}
           </div>
-
-          {/* EDIT MODAL */}
-          {editGoal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50 px-4">
-              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-                <h3 className="text-xl font-bold text-indigo-700 mb-4">
-                  Edit Goal
-                </h3>
-
-                <input
-                  className={inputStyle}
-                  value={editGoal.title}
-                  onChange={(e) =>
-                    setEditGoal({ ...editGoal, title: e.target.value })
-                  }
-                />
-
-                <input
-                  type="number"
-                  className={`${inputStyle} mt-3`}
-                  value={editGoal.targetAmount}
-                  onChange={(e) =>
-                    setEditGoal({
-                      ...editGoal,
-                      targetAmount: e.target.value,
-                    })
-                  }
-                />
-
-                <input
-                  type="date"
-                  className={`${inputStyle} mt-3`}
-                  value={editGoal.deadline}
-                  onChange={(e) =>
-                    setEditGoal({ ...editGoal, deadline: e.target.value })
-                  }
-                />
-
-                <textarea
-                  className={`${inputStyle} mt-3`}
-                  placeholder="Description"
-                  value={editGoal.description || ""}
-                  onChange={(e) =>
-                    setEditGoal({
-                      ...editGoal,
-                      description: e.target.value,
-                    })
-                  }
-                />
-
-                <div className="flex justify-end gap-3 mt-4">
-                  <button
-                    onClick={() => setEditGoal(null)}
-                    className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
-                  <button onClick={updateGoalDetails} className={primaryBtn}>
-                    Update
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>
