@@ -21,9 +21,9 @@ const dangerBtn =
 /* =======================
    EDIT MODAL
 ======================= */
-const EditModal = ({ expense, isOpen, onClose, onUpdate }) => {
+const EditExpenseModal = ({ expense, isOpen, onClose, onUpdate }) => {
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("Groceries");
   const [customCategory, setCustomCategory] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -56,10 +56,7 @@ const EditModal = ({ expense, isOpen, onClose, onUpdate }) => {
     const finalCategory =
       category === "Other" ? customCategory.trim() : category;
 
-    if (!finalCategory) {
-      toast.error("Category required");
-      return;
-    }
+    if (!finalCategory) return toast.error("Enter category");
 
     await api.put(`/expenses/${expense._id}`, {
       amount,
@@ -101,8 +98,8 @@ const EditModal = ({ expense, isOpen, onClose, onUpdate }) => {
             />
           )}
 
-          <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <input className={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-gray-200">
@@ -130,8 +127,10 @@ const Expenses = () => {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
-  /* SEARCH FILTER */
-  const [search, setSearch] = useState("");
+  /* FILTER STATES (EXACT LIKE INCOME) */
+  const [filterCategory, setFilterCategory] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const [editExpense, setEditExpense] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -151,10 +150,7 @@ const Expenses = () => {
     const finalCategory =
       category === "Other" ? customCategory.trim() : category;
 
-    if (!finalCategory) {
-      toast.error("Category required");
-      return;
-    }
+    if (!finalCategory) return toast.error("Enter category");
 
     await api.post("/expenses", {
       amount,
@@ -164,13 +160,11 @@ const Expenses = () => {
     });
 
     toast.success("Expense added");
-
     setAmount("");
     setCategory("Groceries");
     setCustomCategory("");
     setDescription("");
     setDate("");
-
     fetchExpenses();
   };
 
@@ -180,10 +174,15 @@ const Expenses = () => {
     fetchExpenses();
   };
 
-  /* SEARCH FILTER LOGIC (LIKE INCOME) */
-  const filteredExpenses = expenses.filter((e) =>
-    e.category.toLowerCase().includes(search.toLowerCase())
-  );
+  /* FILTER LOGIC (CLONE OF INCOME) */
+  const filteredExpenses = expenses.filter((e) => {
+    const matchCategory = filterCategory ? e.category === filterCategory : true;
+    const matchFrom = fromDate ? new Date(e.date) >= new Date(fromDate) : true;
+    const matchTo = toDate ? new Date(e.date) <= new Date(toDate) : true;
+    return matchCategory && matchFrom && matchTo;
+  });
+
+  const uniqueCategories = [...new Set(expenses.map(e => e.category))];
 
   return (
     <>
@@ -198,7 +197,7 @@ const Expenses = () => {
 
           {/* ADD FORM */}
           <form onSubmit={addExpense} className="bg-white rounded-2xl shadow-lg p-5 grid gap-4 md:grid-cols-5 items-end">
-            <input className={inputStyle} type="number" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <input className={inputStyle} placeholder="Amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
 
             <select className={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)}>
               <option>Groceries</option>
@@ -214,18 +213,33 @@ const Expenses = () => {
             )}
 
             <input className={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <input className={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
             <button className={primaryBtn}>Add Expense</button>
           </form>
 
-          {/* SEARCH FILTER */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 mt-6">
-            <input
-              className={inputStyle}
-              placeholder="Search by category"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          {/* FILTER SECTION (EXACT INCOME DESIGN) */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 mt-6 grid gap-4 md:grid-cols-4 items-end">
+            <select className={inputStyle} value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+              <option value="">All Categories</option>
+              {uniqueCategories.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+
+            <input className={inputStyle} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            <input className={inputStyle} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+
+            <button
+              onClick={() => {
+                setFilterCategory("");
+                setFromDate("");
+                setToDate("");
+              }}
+              className={outlineBtn}
+            >
+              Clear Filters
+            </button>
           </div>
 
           {/* MOBILE VIEW */}
@@ -239,7 +253,13 @@ const Expenses = () => {
                   </span>
                 </div>
 
-                <p className="text-sm mt-2 opacity-90">{e.description || "No description"}</p>
+                <p className="text-sm mt-2 opacity-90">
+                  {e.date.split("T")[0]}
+                </p>
+
+                <p className="text-sm mt-1 opacity-90">
+                  {e.description || "No description"}
+                </p>
 
                 <div className="flex gap-3 mt-4">
                   <button onClick={() => { setEditExpense(e); setModalOpen(true); }} className="flex-1 bg-white/20 py-2 rounded-xl">
@@ -261,6 +281,7 @@ const Expenses = () => {
                   <th className="p-3 text-left">Amount</th>
                   <th className="p-3 text-left">Category</th>
                   <th className="p-3 text-left">Description</th>
+                  <th className="p-3 text-left">Date</th>
                   <th className="p-3 text-center">Actions</th>
                 </tr>
               </thead>
@@ -270,6 +291,7 @@ const Expenses = () => {
                     <td className="p-3 font-semibold text-indigo-700">₹ {e.amount}</td>
                     <td className="p-3">{e.category}</td>
                     <td className="p-3">{e.description || "-"}</td>
+                    <td className="p-3">{e.date.split("T")[0]}</td>
                     <td className="p-3 flex justify-center gap-3">
                       <button onClick={() => { setEditExpense(e); setModalOpen(true); }} className={outlineBtn}>
                         Edit
@@ -284,7 +306,7 @@ const Expenses = () => {
             </table>
           </div>
 
-          <EditModal
+          <EditExpenseModal
             expense={editExpense}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
