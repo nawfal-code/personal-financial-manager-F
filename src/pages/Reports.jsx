@@ -26,6 +26,11 @@ const Reports = () => {
   const [expenses, setExpenses] = useState([]);
   const [incomeRecords, setIncomeRecords] = useState([]);
   const [totalIncome, setTotalIncome] = useState(0);
+
+  // ✅ NEW (ONLY FOR MENTOR)
+  const [budgets, setBudgets] = useState([]);
+  const [goals, setGoals] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -34,24 +39,29 @@ const Reports = () => {
     setError("");
 
     try {
-      const [expRes, incRes] = await Promise.all([
+      const [expRes, incRes, budRes, goalRes] = await Promise.all([
         api.get("/reports/expenses/category"),
         api.get("/reports/income"),
+        api.get("/reports/budgets"),
+        api.get("/reports/goals"),
       ]);
 
-      // ✅ FIXED: backend now returns { category, total }
+      /* EXPENSES */
       const expensesData = expRes.data
         .filter(e => e.category)
         .map(e => ({
           category: e.category,
           amount: e.total,
         }));
-
       setExpenses(expensesData);
 
-      // ✅ FIXED: income structure
+      /* INCOME */
       setIncomeRecords(incRes.data.records || []);
       setTotalIncome(incRes.data.totalIncome || 0);
+
+      /* BUDGET + GOALS */
+      setBudgets(budRes.data || []);
+      setGoals(goalRes.data || []);
 
     } catch (err) {
       console.error(err);
@@ -143,12 +153,10 @@ const Reports = () => {
       <div className="p-6 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold mb-6 text-center">Reports</h2>
 
+        {/* ===================== CHARTS ===================== */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Income vs Expense */}
           <div className="border p-4 rounded shadow">
-            <h3 className="font-semibold mb-2 text-center">
-              Income vs Expense
-            </h3>
+            <h3 className="font-semibold mb-2 text-center">Income vs Expense</h3>
             <Bar
               data={{
                 labels: ["Income", "Expense"],
@@ -163,33 +171,72 @@ const Reports = () => {
             />
           </div>
 
-          {/* Expense by Category */}
           <div className="border p-4 rounded shadow">
-            <h3 className="font-semibold mb-2 text-center">
-              Expense by Category
-            </h3>
+            <h3 className="font-semibold mb-2 text-center">Expense by Category</h3>
             {expenses.length > 0 ? (
               <Pie data={expenseChart} />
             ) : (
-              <p className="text-center text-gray-500 mt-4">
-                No expenses to show
-              </p>
+              <p className="text-center text-gray-500 mt-4">No expenses to show</p>
             )}
           </div>
         </div>
 
-        <div className="mt-6 flex gap-4 justify-center">
-          <button
-            onClick={exportCSV}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
+        {/* ===================== BUDGET REPORT ===================== */}
+        <div className="mt-10">
+          <h3 className="font-bold mb-3">Budget Report</h3>
+          <table className="w-full border text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-2">Category</th>
+                <th className="border p-2">Limit</th>
+                <th className="border p-2">Spent</th>
+                <th className="border p-2">Used %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {budgets.map(b => (
+                <tr key={b._id}>
+                  <td className="border p-2">{b.category}</td>
+                  <td className="border p-2">₹{b.limitAmount}</td>
+                  <td className="border p-2">₹{b.spentAmount}</td>
+                  <td className="border p-2">{b.percentUsed}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ===================== GOAL REPORT ===================== */}
+        <div className="mt-10">
+          <h3 className="font-bold mb-3">Goal Progress Report</h3>
+          <table className="w-full border text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-2">Goal</th>
+                <th className="border p-2">Target</th>
+                <th className="border p-2">Saved</th>
+                <th className="border p-2">Completed %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {goals.map(g => (
+                <tr key={g._id}>
+                  <td className="border p-2">{g.title}</td>
+                  <td className="border p-2">₹{g.targetAmount}</td>
+                  <td className="border p-2">₹{g.savedAmount}</td>
+                  <td className="border p-2">{g.percentCompleted}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ===================== EXPORT ===================== */}
+        <div className="mt-8 flex gap-4 justify-center">
+          <button onClick={exportCSV} className="bg-blue-500 text-white px-4 py-2 rounded">
             Export CSV
           </button>
-
-          <button
-            onClick={exportPDF}
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-          >
+          <button onClick={exportPDF} className="bg-green-500 text-white px-4 py-2 rounded">
             Export PDF
           </button>
         </div>
