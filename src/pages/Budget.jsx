@@ -26,6 +26,9 @@ const Budget = () => {
   const [category, setCategory] = useState("Groceries");
   const [limitAmount, setLimitAmount] = useState("");
 
+  // ✅ NEW (ONLY ADDITION)
+  const [customCategory, setCustomCategory] = useState("");
+
   const [editBudget, setEditBudget] = useState(null);
   const [editLimit, setEditLimit] = useState("");
 
@@ -41,9 +44,18 @@ const Budget = () => {
   const addBudget = async (e) => {
     e.preventDefault();
 
+    // ✅ ONLY LOGIC CHANGE
+    const finalCategory =
+      category === "Other" ? customCategory.trim() : category;
+
+    if (!finalCategory) {
+      toast.error("Please enter category name");
+      return;
+    }
+
     try {
       await api.post("/budgets", {
-        category,
+        category: finalCategory,
         limitAmount,
         period: "monthly",
         startDate: new Date(),
@@ -51,6 +63,8 @@ const Budget = () => {
 
       toast.success("Budget created");
       setLimitAmount("");
+      setCategory("Groceries");
+      setCustomCategory("");
       fetchBudgets();
     } catch (err) {
       toast.error(err.response?.data?.message || "Error");
@@ -72,7 +86,6 @@ const Budget = () => {
     fetchBudgets();
   };
 
-  // ✅ NEW: Recalculate ALL budgets
   const recalcAllBudgets = async () => {
     await api.patch("/budgets/recalculate-all");
     toast.success("All budgets recalculated");
@@ -90,7 +103,6 @@ const Budget = () => {
             Budget Manager
           </h2>
 
-          {/* ✅ SINGLE GLOBAL RECALCULATE BUTTON */}
           <div className="flex justify-end mb-4">
             <button onClick={recalcAllBudgets} className={primaryBtn}>
               Recalculate All Budgets
@@ -102,7 +114,11 @@ const Budget = () => {
             onSubmit={addBudget}
             className="bg-white rounded-2xl shadow-lg p-5 grid gap-4 md:grid-cols-4 items-end"
           >
-            <select className={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select
+              className={inputStyle}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
               <option>Groceries</option>
               <option>Food</option>
               <option>Rent</option>
@@ -110,6 +126,17 @@ const Budget = () => {
               <option>Transport</option>
               <option>Other</option>
             </select>
+
+            {/* ✅ NEW (ONLY UI ADDITION) */}
+            {category === "Other" && (
+              <input
+                type="text"
+                placeholder="Enter category name"
+                className={inputStyle}
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+              />
+            )}
 
             <input
               type="number"
@@ -147,10 +174,19 @@ const Budget = () => {
                   </div>
 
                   <div className="flex gap-2 mt-4">
-                    <button onClick={() => { setEditBudget(b); setEditLimit(b.limitAmount); }} className={outlineBtn}>
+                    <button
+                      onClick={() => {
+                        setEditBudget(b);
+                        setEditLimit(b.limitAmount);
+                      }}
+                      className={outlineBtn}
+                    >
                       Edit
                     </button>
-                    <button onClick={() => deleteBudget(b._id)} className={dangerBtn}>
+                    <button
+                      onClick={() => deleteBudget(b._id)}
+                      className={dangerBtn}
+                    >
                       Delete
                     </button>
                   </div>
